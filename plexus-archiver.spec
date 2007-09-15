@@ -36,7 +36,7 @@
 
 Name:           plexus-archiver
 Version:        1.0
-Release:        %mkrel 0.1.a6.1.1.1
+Release:        %mkrel 0.1.a6.1.1.2
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        Apache Software License 
@@ -65,8 +65,6 @@ Requires:       jpackage-utils
 
 %if %{gcj_support}
 BuildRequires:          java-gcj-compat-devel
-Requires(post):         java-gcj-compat
-Requires(postun):       java-gcj-compat
 %endif
 
 %description
