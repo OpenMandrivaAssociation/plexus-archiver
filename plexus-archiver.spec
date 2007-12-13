@@ -45,7 +45,7 @@
 
 Name:           plexus-archiver
 Version:        1.0
-Release:        %mkrel 0.1.a6.2.0.1
+Release:        %mkrel 0.1.a6.2.0.2
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        Apache Software License 
@@ -74,6 +74,7 @@ BuildRequires:  maven2-plugin-jar
 BuildRequires:  maven2-plugin-javadoc
 BuildRequires:  maven2-plugin-resources
 BuildRequires:  maven2-plugin-surefire
+BuildRequires:  maven2-plugin-release
 %endif
 BuildRequires:  classworlds >= 0:1.1
 BuildRequires:  plexus-container-default 
