@@ -1,4 +1,4 @@
-# Copyright (c) 2000-2005, JPackage Project
+# Copyright (c) 2000-2007, JPackage Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,20 @@
 
 %define gcj_support %{?_with_gcj_support:1}%{!?_with_gcj_support:%{?_without_gcj_support:0}%{!?_without_gcj_support:%{?_gcj_support:%{_gcj_support}}%{!?_gcj_support:0}}}
 
+# If you don't want to build with maven, and use straight ant instead,
+# give rpmbuild option '--without maven'
+
+%define with_maven %{!?_without_maven:1}%{?_without_maven:0}
+%define without_maven %{?_without_maven:1}%{!?_without_maven:0}
+
 %define namedversion 1.0-alpha-6
+
+%define parent plexus
+%define subname archiver
 
 Name:           plexus-archiver
 Version:        1.0
-Release:        %mkrel 0.1.a6.1.1.2
+Release:        %mkrel 0.1.a6.2.0.1
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        Apache Software License 
@@ -47,14 +56,25 @@ Source0:        plexus-archiver-src.tar.gz
 # tar czvf plexus-archiver-src.tar.gz plexus-archiver
 Source1:        plexus-archiver-1.0-build.xml
 Source2:        plexus-archiver-1.0-project.xml
+Source3:        plexus-archiver-settings.xml
+Source4:        plexus-archiver-1.0-jpp-depmap.xml
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %if ! %{gcj_support}
 BuildArch:      noarch
 %endif
-BuildRequires:  jpackage-utils >= 0:1.6
+BuildRequires:  jpackage-utils >= 0:1.7.2
 BuildRequires:  ant >= 0:1.6
+%if %{with_maven}
+BuildRequires:  maven2 >= 2.0.4-10jpp
+BuildRequires:  maven2-plugin-compiler
+BuildRequires:  maven2-plugin-install
+BuildRequires:  maven2-plugin-jar
+BuildRequires:  maven2-plugin-javadoc
+BuildRequires:  maven2-plugin-resources
+BuildRequires:  maven2-plugin-surefire
+%endif
 BuildRequires:  classworlds >= 0:1.1
 BuildRequires:  plexus-container-default 
 BuildRequires:  plexus-utils 
@@ -88,8 +108,30 @@ Javadoc for %{name}.
 %setup -q -n plexus-archiver
 cp %{SOURCE1} build.xml
 cp %{SOURCE2} project.xml
+cp %{SOURCE3} settings.xml
 
 %build
+sed -i -e "s|<url>__JPP_URL_PLACEHOLDER__</url>|<url>file://`pwd`/.m2/repository</url>|g" settings.xml
+sed -i -e "s|<url>__JAVADIR_PLACEHOLDER__</url>|<url>file://`pwd`/external_repo</url>|g" settings.xml
+sed -i -e "s|<url>__MAVENREPO_DIR_PLACEHOLDER__</url>|<url>file://`pwd`/.m2/repository</url>|g" settings.xml
+sed -i -e "s|<url>__MAVENDIR_PLUGIN_PLACEHOLDER__</url>|<url>file:///usr/share/maven2/plugins</url>|g" settings.xml
+sed -i -e "s|<url>__ECLIPSEDIR_PLUGIN_PLACEHOLDER__</url>|<url>file:///usr/share/eclipse/plugins</url>|g" settings.xml
+
+export MAVEN_REPO_LOCAL=$(pwd)/.m2/repository
+mkdir -p $MAVEN_REPO_LOCAL
+
+mkdir external_repo
+ln -s %{_javadir} external_repo/JPP
+
+%if %{with_maven}
+    mvn-jpp \
+        -e \
+        -s $(pwd)/settings.xml \
+        -Dmaven2.jpp.depmap.file=%{SOURCE4} \
+        -Dmaven.repo.local=$MAVEN_REPO_LOCAL \
+        install javadoc:javadoc
+
+%else
 mkdir -p target/lib
 build-jar-repository -s -p target/lib \
 classworlds \
@@ -97,19 +139,28 @@ plexus/container-default \
 plexus/utils \
 
 %{ant} jar javadoc
-
+%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
 # jars
 install -d -m 755 $RPM_BUILD_ROOT%{_javadir}/plexus
-install -pm 644 target/%{name}-%{version}-alpha-3.jar \
+install -pm 644 target/%{name}-%{namedversion}.jar \
   $RPM_BUILD_ROOT%{_javadir}/plexus/archiver-%{version}.jar
-(cd $RPM_BUILD_ROOT%{_javadir}/plexus && for jar in *-%{version}*; \
-                  do ln -sf ${jar} `echo $jar| sed  "s|-%{version}||g"`; done)
+%add_to_maven_depmap org.codehaus.plexus %{name} %{version} JPP/%{parent} %{subname}
+
+(cd $RPM_BUILD_ROOT%{_javadir}/plexus && for jar in *-%{version}*; do ln -sf ${jar} `echo $jar| sed  "s|-%{version}||g"`; done)
+
+# poms
+%if %{with_maven}
+install -d -m 755 $RPM_BUILD_ROOT%{_datadir}/maven2/poms
+install -pm 644 pom.xml \
+    $RPM_BUILD_ROOT%{_datadir}/maven2/poms/JPP.%{parent}-%{subname}.pom
+%endif
+
 # javadoc
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
-cp -pr target/docs/apidocs/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
+cp -pr target/site/apidocs/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
 ln -s %{name}-%{version} $RPM_BUILD_ROOT%{_javadocdir}/%{name} 
 
 %if %{gcj_support}
@@ -119,21 +170,28 @@ ln -s %{name}-%{version} $RPM_BUILD_ROOT%{_javadocdir}/%{name}
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%if %{gcj_support}
 %post
+%update_maven_depmap
+%if %{gcj_support}
 %{update_gcjdb}
+%endif
 
 %postun
+%update_maven_depmap
+%if %{gcj_support}
 %{clean_gcjdb}
 %endif
 
 %files
 %defattr(-,root,root,-)
 %{_javadir}/*
-
+%if %{with_maven}
+%{_datadir}/maven2/poms/*
+%endif
+%{_mavendepmapfragdir}
 %if %{gcj_support}
 %dir %attr(-,root,root) %{_libdir}/gcj/%{name}
-%attr(-,root,root) %{_libdir}/gcj/%{name}/archiver-1.0.jar.*
+%attr(-,root,root) %{_libdir}/gcj/%{name}/%{subname}*-%{version}.jar.*
 %endif
 
 %files javadoc
