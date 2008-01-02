@@ -59,6 +59,7 @@ Source2:        plexus-archiver-1.0-project.xml
 Source3:        plexus-archiver-settings.xml
 Source4:        plexus-archiver-1.0-jpp-depmap.xml
 
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
 %if ! %{gcj_support}
 BuildArch:      noarch
