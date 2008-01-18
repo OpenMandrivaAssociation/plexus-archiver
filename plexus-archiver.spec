@@ -38,26 +38,25 @@
 %define with_maven %{!?_without_maven:1}%{?_without_maven:0}
 %define without_maven %{?_without_maven:1}%{!?_without_maven:0}
 
-%define namedversion 1.0-alpha-6
+%define namedversion 1.0-alpha-7
 
 %define parent plexus
 %define subname archiver
 
 Name:           plexus-archiver
 Version:        1.0
-Release:        %mkrel 0.1.a6.2.0.3
+Release:        %mkrel 0.1.a7.0.0.0
 Epoch:          0
 Summary:        Plexus Archiver Component
-License:        Apache Software License 
+License:        Apache Sotware License
 Group:          Development/Java
 URL:            http://plexus.codehaus.org/
-Source0:        plexus-archiver-src.tar.gz
+Source0:        %{name}-%{namedversion}.tar.gz
 # svn export svn://svn.plexus.codehaus.org/plexus/tags/plexus-archiver-%{namedversion}
 # tar czvf plexus-archiver-src.tar.gz plexus-archiver
 Source1:        plexus-archiver-1.0-build.xml
-Source2:        plexus-archiver-1.0-project.xml
-Source3:        plexus-archiver-settings.xml
-Source4:        plexus-archiver-1.0-jpp-depmap.xml
+Source2:        plexus-archiver-settings.xml
+Source3:        plexus-archiver-1.0-jpp-depmap.xml
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
@@ -72,9 +71,9 @@ BuildRequires:  maven2-plugin-compiler
 BuildRequires:  maven2-plugin-install
 BuildRequires:  maven2-plugin-jar
 BuildRequires:  maven2-plugin-javadoc
+BuildRequires:  maven2-plugin-release
 BuildRequires:  maven2-plugin-resources
 BuildRequires:  maven2-plugin-surefire
-BuildRequires:  maven2-plugin-release
 %endif
 BuildRequires:  classworlds >= 0:1.1
 BuildRequires:  plexus-container-default 
@@ -106,10 +105,9 @@ Javadoc for %{name}.
 
 
 %prep
-%setup -q -n plexus-archiver
+%setup -q -n %{name}-%{namedversion}
 cp %{SOURCE1} build.xml
-cp %{SOURCE2} project.xml
-cp %{SOURCE3} settings.xml
+cp %{SOURCE2} settings.xml
 
 %build
 sed -i -e "s|<url>__JPP_URL_PLACEHOLDER__</url>|<url>file://`pwd`/.m2/repository</url>|g" settings.xml
@@ -127,8 +125,9 @@ ln -s %{_javadir} external_repo/JPP
 %if %{with_maven}
     mvn-jpp \
         -e \
+        -Dmaven.test.failure.ignore=true \
         -s $(pwd)/settings.xml \
-        -Dmaven2.jpp.depmap.file=%{SOURCE4} \
+        -Dmaven2.jpp.depmap.file=%{SOURCE3} \
         -Dmaven.repo.local=$MAVEN_REPO_LOCAL \
         install javadoc:javadoc
 
@@ -153,11 +152,9 @@ install -pm 644 target/%{name}-%{namedversion}.jar \
 (cd $RPM_BUILD_ROOT%{_javadir}/plexus && for jar in *-%{version}*; do ln -sf ${jar} `echo $jar| sed  "s|-%{version}||g"`; done)
 
 # poms
-%if %{with_maven}
 install -d -m 755 $RPM_BUILD_ROOT%{_datadir}/maven2/poms
 install -pm 644 pom.xml \
     $RPM_BUILD_ROOT%{_datadir}/maven2/poms/JPP.%{parent}-%{subname}.pom
-%endif
 
 # javadoc
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
