@@ -1,4 +1,4 @@
-# Copyright (c) 2000-2007, JPackage Project
+# Copyright (c) 2000-2005, JPackage Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,65 +28,40 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-%define _with_gcj_support 1
-
-%define gcj_support %{?_with_gcj_support:1}%{!?_with_gcj_support:%{?_without_gcj_support:0}%{!?_without_gcj_support:%{?_gcj_support:%{_gcj_support}}%{!?_gcj_support:0}}}
-
-# If you don't want to build with maven, and use straight ant instead,
-# give rpmbuild option '--without maven'
-
-%define with_maven %{!?_without_maven:1}%{?_without_maven:0}
-%define without_maven %{?_without_maven:1}%{!?_without_maven:0}
-
-%define namedversion 1.0-alpha-7
-
-%define parent plexus
-%define subname archiver
-
 Name:           plexus-archiver
-Version:        1.0
-Release:        %mkrel 0.1.a7.0.0.0
-Epoch:          0
+Version:        1.1
+Release:        2
 Summary:        Plexus Archiver Component
-License:        Apache Sotware License
+License:        MIT and ASL 2.0
 Group:          Development/Java
-URL:            http://plexus.codehaus.org/
-Source0:        %{name}-%{namedversion}.tar.gz
-# svn export svn://svn.plexus.codehaus.org/plexus/tags/plexus-archiver-%{namedversion}
-# tar czvf plexus-archiver-src.tar.gz plexus-archiver
-Source1:        plexus-archiver-1.0-build.xml
-Source2:        plexus-archiver-settings.xml
-Source3:        plexus-archiver-1.0-jpp-depmap.xml
+URL:            http://plexus.codehaus.org/plexus-components/plexus-archiver/
+Source0:        plexus-archiver-%{version}-src.tar.xz
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-%if ! %{gcj_support}
 BuildArch:      noarch
-%endif
-BuildRequires:  java-rpmbuild >= 0:1.7.2
+BuildRequires:  jpackage-utils >= 0:1.6
 BuildRequires:  ant >= 0:1.6
-%if %{with_maven}
-BuildRequires:  maven2 >= 2.0.4-10jpp
-BuildRequires:  maven2-plugin-compiler
-BuildRequires:  maven2-plugin-install
-BuildRequires:  maven2-plugin-jar
-BuildRequires:  maven2-plugin-javadoc
-BuildRequires:  maven2-plugin-release
-BuildRequires:  maven2-plugin-resources
-BuildRequires:  maven2-plugin-surefire
-BuildRequires:  plexus-maven-plugin
-%endif
 BuildRequires:  classworlds >= 0:1.1
 BuildRequires:  plexus-container-default 
 BuildRequires:  plexus-utils 
+BuildRequires:  plexus-io
+BuildRequires: maven2
+BuildRequires: maven-resources-plugin
+BuildRequires: maven-compiler-plugin
+BuildRequires: maven-jar-plugin
+BuildRequires: maven-install-plugin
+BuildRequires: maven-javadoc-plugin
+BuildRequires: maven-surefire-plugin
+BuildRequires: maven-surefire-provider-junit
+BuildRequires: maven-shared-reporting-impl
+BuildRequires: maven-doxia-sitetools
+BuildRequires: plexus-maven-plugin
 Requires:       classworlds >= 0:1.1
 Requires:       plexus-container-default 
 Requires:       plexus-utils 
 Requires:       jpackage-utils
-
-%if %{gcj_support}
-BuildRequires:          java-gcj-compat-devel
-%endif
+Requires:       plexus-io
 
 %description
 The Plexus project seeks to create end-to-end developer tools for 
@@ -106,94 +81,58 @@ Javadoc for %{name}.
 
 
 %prep
-%setup -q -n %{name}-%{namedversion}
-cp %{SOURCE1} build.xml
-cp %{SOURCE2} settings.xml
+%setup -q 
+
+#remove not compilint tests
+rm -fr src/test/java/org/codehaus/plexus/archiver/DuplicateFilesTest.java
 
 %build
-sed -i -e "s|<url>__JPP_URL_PLACEHOLDER__</url>|<url>file://`pwd`/.m2/repository</url>|g" settings.xml
-sed -i -e "s|<url>__JAVADIR_PLACEHOLDER__</url>|<url>file://`pwd`/external_repo</url>|g" settings.xml
-sed -i -e "s|<url>__MAVENREPO_DIR_PLACEHOLDER__</url>|<url>file://`pwd`/.m2/repository</url>|g" settings.xml
-sed -i -e "s|<url>__MAVENDIR_PLUGIN_PLACEHOLDER__</url>|<url>file:///usr/share/maven2/plugins</url>|g" settings.xml
-sed -i -e "s|<url>__ECLIPSEDIR_PLUGIN_PLACEHOLDER__</url>|<url>file:///usr/share/eclipse/plugins</url>|g" settings.xml
-
 export MAVEN_REPO_LOCAL=$(pwd)/.m2/repository
-mkdir -p $MAVEN_REPO_LOCAL
-
-mkdir external_repo
-ln -s %{_javadir} external_repo/JPP
-
-%if %{with_maven}
-    mvn-jpp \
+mvn-jpp \
         -e \
-        -Dmaven.test.failure.ignore=true \
-        -s $(pwd)/settings.xml \
-        -Dmaven2.jpp.depmap.file=%{SOURCE3} \
+        -Dmaven2.jpp.mode=true \
         -Dmaven.repo.local=$MAVEN_REPO_LOCAL \
+        -Dmaven.test.failure.ignore=true \
         install javadoc:javadoc
 
-%else
-mkdir -p target/lib
-build-jar-repository -s -p target/lib \
-classworlds \
-plexus/container-default \
-plexus/utils \
-
-%{ant} jar javadoc
-%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
 # jars
 install -d -m 755 $RPM_BUILD_ROOT%{_javadir}/plexus
-install -pm 644 target/%{name}-%{namedversion}.jar \
+install -pm 644 target/%{name}-%{version}.jar \
   $RPM_BUILD_ROOT%{_javadir}/plexus/archiver-%{version}.jar
-%add_to_maven_depmap org.codehaus.plexus %{name} %{version} JPP/%{parent} %{subname}
+(cd $RPM_BUILD_ROOT%{_javadir}/plexus && for jar in *-%{version}*; \
+                  do ln -sf ${jar} `echo $jar| sed  "s|-%{version}||g"`; done)
+                  
+%add_to_maven_depmap org.codehaus.plexus %{name} %{version} JPP/plexus archiver
 
-(cd $RPM_BUILD_ROOT%{_javadir}/plexus && for jar in *-%{version}*; do ln -sf ${jar} `echo $jar| sed  "s|-%{version}||g"`; done)
-
-# poms
+# pom
 install -d -m 755 $RPM_BUILD_ROOT%{_datadir}/maven2/poms
-install -pm 644 pom.xml \
-    $RPM_BUILD_ROOT%{_datadir}/maven2/poms/JPP.%{parent}-%{subname}.pom
+install -pm 644 pom.xml $RPM_BUILD_ROOT%{_datadir}/maven2/poms/JPP.%{name}.pom
 
 # javadoc
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
-cp -pr target/site/apidocs/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
+cp -pr target/site/api*/* $RPM_BUILD_ROOT%{_javadocdir}/%{name}-%{version}
 ln -s %{name}-%{version} $RPM_BUILD_ROOT%{_javadocdir}/%{name} 
-
-%if %{gcj_support}
-%{_bindir}/aot-compile-rpm
-%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %post
 %update_maven_depmap
-%if %{gcj_support}
-%{update_gcjdb}
-%endif
 
 %postun
 %update_maven_depmap
-%if %{gcj_support}
-%{clean_gcjdb}
-%endif
 
 %files
 %defattr(-,root,root,-)
 %{_javadir}/*
-%if %{with_maven}
-%{_datadir}/maven2/poms/*
-%endif
-%{_mavendepmapfragdir}
-%if %{gcj_support}
-%dir %attr(-,root,root) %{_libdir}/gcj/%{name}
-%attr(-,root,root) %{_libdir}/gcj/%{name}/%{subname}*-%{version}.jar.*
-%endif
+%{_mavenpomdir}/*
+%{_mavendepmapfragdir}/*
 
 %files javadoc
 %defattr(-,root,root,-)
 %doc %{_javadocdir}/%{name}-%{version}
 %doc %{_javadocdir}/%{name}
+
