@@ -30,7 +30,7 @@
 
 Name:           plexus-archiver
 Version:        1.1
-Release:        2
+Release:        4
 Summary:        Plexus Archiver Component
 License:        MIT and ASL 2.0
 Group:          Development/Java
