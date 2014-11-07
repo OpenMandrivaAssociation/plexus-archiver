@@ -31,7 +31,7 @@
 
 Name:           plexus-archiver
 Version:        2.4.2
-Release:        3.1%{?dist}
+Release:        3.2%{?dist}
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        ASL 2.0
@@ -65,6 +65,8 @@ Javadoc for %{name}.
 
 
 %prep
+# funny chars in the archive which upset bsdtar
+export LC_ALL=en_US.UTF-8
 %setup -q -n %{name}-%{name}-%{version}
 %mvn_file :%{name} plexus/archiver
 
