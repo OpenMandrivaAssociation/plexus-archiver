@@ -30,8 +30,8 @@
 #
 
 Name:           plexus-archiver
-Version:        2.4.2
-Release:        3.2%{?dist}
+Version:        2.4.4
+Release:        1%{?dist}
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        ASL 2.0
