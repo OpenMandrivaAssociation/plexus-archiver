@@ -1,7 +1,7 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           plexus-archiver
 Version:        2.4.4
-Release:        4.2
+Release:        4.3
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        ASL 2.0
