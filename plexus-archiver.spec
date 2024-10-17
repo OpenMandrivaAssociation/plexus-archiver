@@ -5,7 +5,7 @@ Release:        4.3
 Epoch:          0
 Summary:        Plexus Archiver Component
 License:        ASL 2.0
-URL:            http://plexus.codehaus.org/plexus-components/plexus-archiver/
+URL:            https://plexus.codehaus.org/plexus-components/plexus-archiver/
 Source0:        https://github.com/sonatype/%{name}/archive/%{name}-%{version}.tar.gz
 
 # PLXCOMP-64 and PLXCOMP-113: Add support for extracting zip and tar symbolic links
