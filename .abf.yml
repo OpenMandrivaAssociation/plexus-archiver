@@ -1,2 +1,4 @@
 sources:
+  plexus-archiver-4.15.0.tar.gz: c5cc4df97b61caf3b36a665df26b8f956eee5df2
+removed_sources:
   plexus-archiver-4.4.0.tar.gz: 62b4a0e1596b8f2b4b64b8a9b39efe35b999cae0
